@@ -2,32 +2,38 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Simple Calculator</title>
+  <title>Simple Calculator with History</title>
   <style>
+    * { box-sizing: border-box; }
     body {
       font-family: Arial, sans-serif;
+      background-color: #1e1e1e;
+      color: #fff;
       display: flex;
       justify-content: center;
-      align-items: center;
-      height: 100vh;
-      background: #1e1e1e;
-      color: white;
+      align-items: start;
+      padding: 50px;
+    }
+    .container {
+      display: flex;
+      gap: 20px;
     }
     .calculator {
       background: #2e2e2e;
       padding: 20px;
-      border-radius: 15px;
-      box-shadow: 0 0 10px #000;
+      border-radius: 10px;
+      box-shadow: 0 0 15px #000;
     }
-    #display {
+    .display {
       width: 100%;
-      font-size: 2em;
       padding: 10px;
-      margin-bottom: 10px;
-      background: #000;
-      color: #0f0;
-      border: none;
+      font-size: 24px;
       text-align: right;
+      margin-bottom: 10px;
+      border: none;
+      border-radius: 5px;
+      background: #444;
+      color: #fff;
     }
     .buttons {
       display: grid;
@@ -35,67 +41,140 @@
       gap: 10px;
     }
     button {
-      font-size: 1.5em;
-      padding: 10px;
+      padding: 15px;
+      font-size: 18px;
       border: none;
-      border-radius: 10px;
+      border-radius: 5px;
       cursor: pointer;
-      background: #444;
+      background: #555;
       color: white;
+      transition: background 0.3s;
     }
     button:hover {
-      background: #666;
+      background: #777;
     }
-
-    @media (max-width: 400px) {
-      .buttons {
-        grid-template-columns: repeat(4, 1fr);
-      }
+    .history {
+      width: 220px;
+      background: #2e2e2e;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px #000;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .history h3 {
+      margin-top: 0;
+      color: #0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .history-item {
+      font-size: 16px;
+      margin: 5px 0;
+      border-bottom: 1px solid #444;
+      padding-bottom: 5px;
+    }
+    .clear-btn {
+      background: #900;
+      color: white;
+      font-size: 14px;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      border: none;
+    }
+    .clear-btn:hover {
+      background: #c00;
     }
   </style>
 </head>
 <body>
-  <div class="calculator">
-    <input type="text" id="display" disabled />
-    <div class="buttons">
-      <button onclick="append('7')">7</button>
-      <button onclick="append('8')">8</button>
-      <button onclick="append('9')">9</button>
-      <button onclick="append('/')">÷</button>
+  <div class="container">
+    <div class="calculator">
+      <input type="text" id="display" class="display" readonly>
+      <div class="buttons">
+        <button onclick="append('7')">7</button>
+        <button onclick="append('8')">8</button>
+        <button onclick="append('9')">9</button>
+        <button onclick="append('/')">/</button>
 
-      <button onclick="append('4')">4</button>
-      <button onclick="append('5')">5</button>
-      <button onclick="append('6')">6</button>
-      <button onclick="append('*')">×</button>
+        <button onclick="append('4')">4</button>
+        <button onclick="append('5')">5</button>
+        <button onclick="append('6')">6</button>
+        <button onclick="append('*')">*</button>
 
-      <button onclick="append('1')">1</button>
-      <button onclick="append('2')">2</button>
-      <button onclick="append('3')">3</button>
-      <button onclick="append('-')">−</button>
+        <button onclick="append('1')">1</button>
+        <button onclick="append('2')">2</button>
+        <button onclick="append('3')">3</button>
+        <button onclick="append('-')">-</button>
 
-      <button onclick="append('0')">0</button>
-      <button onclick="clearDisplay()">C</button>
-      <button onclick="calculate()">=</button>
-      <button onclick="append('+')">+</button>
+        <button onclick="append('0')">0</button>
+        <button onclick="append('.')">.</button>
+        <button onclick="calculate()">=</button>
+        <button onclick="append('+')">+</button>
+
+        <button onclick="clearDisplay()" style="grid-column: span 4;">C</button>
+      </div>
+    </div>
+
+    <div class="history">
+      <h3>
+        History
+        <button class="clear-btn" onclick="clearHistory()">Clear</button>
+      </h3>
+      <div id="historyList"></div>
     </div>
   </div>
 
   <script>
+    const display = document.getElementById('display');
+    const historyList = document.getElementById('historyList');
+
     function append(value) {
-      document.getElementById("display").value += value;
+      display.value += value;
     }
 
     function clearDisplay() {
-      document.getElementById("display").value = '';
+      display.value = '';
     }
 
     function calculate() {
       try {
-        document.getElementById("display").value = eval(document.getElementById("display").value);
+        const result = eval(display.value);
+        const expression = display.value + ' = ' + result;
+        display.value = result;
+        saveToHistory(expression);
       } catch {
-        document.getElementById("display").value = "Error";
+        display.value = 'Error';
       }
     }
+
+    function saveToHistory(entry) {
+      let history = JSON.parse(localStorage.getItem('calcHistory')) || [];
+      history.push(entry);
+      localStorage.setItem('calcHistory', JSON.stringify(history));
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const history = JSON.parse(localStorage.getItem('calcHistory')) || [];
+      historyList.innerHTML = '';
+      history.slice().reverse().forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.textContent = item;
+        historyList.appendChild(div);
+      });
+    }
+
+    function clearHistory() {
+      localStorage.removeItem('calcHistory');
+      renderHistory();
+    }
+
+    // Initial render
+    renderHistory();
   </script>
 </body>
 </html>
